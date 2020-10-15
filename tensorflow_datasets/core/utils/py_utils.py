@@ -25,15 +25,11 @@ import io
 import itertools
 import logging
 import os
-import pathlib
 import random
 import shutil
 import string
-import sys
 import textwrap
 import threading
-import types
-import typing
 from typing import Any, Callable, Iterator, List, NoReturn, Tuple, TypeVar, Union
 import uuid
 
@@ -42,17 +38,6 @@ import tensorflow.compat.v2 as tf
 from tensorflow_datasets.core import constants
 from tensorflow_datasets.core.utils import type_utils
 
-
-# pylint: disable=g-import-not-at-top
-if sys.version_info >= (3, 9):
-  import importlib.resources as importlib_resources
-else:
-  import importlib_resources
-
-# pylint: enable=g-import-not-at-top
-
-ReadOnlyPath = type_utils.ReadOnlyPath
-ReadWritePath = type_utils.ReadWritePath
 Tree = type_utils.Tree
 
 # NOTE: When used on an instance method, the cache is shared across all
@@ -381,19 +366,6 @@ def incomplete_dir(dirname):
       tf.io.gfile.rmtree(tmp_dir)
 
 
-def tfds_dir() -> str:
-  """Path to tensorflow_datasets directory.
-
-  The difference with `tfds.core.get_tfds_path` is that this function can be
-  used for write access while `tfds.core.get_tfds_path` should be used for
-  read-only.
-
-  Returns:
-    tfds_dir: The root TFDS path.
-  """
-  return os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-
-
 @contextlib.contextmanager
 def atomic_write(path, mode):
   """Writes to path atomically, by writing to temp file and renaming it."""
@@ -401,30 +373,6 @@ def atomic_write(path, mode):
   with tf.io.gfile.GFile(tmp_path, mode) as file_:
     yield file_
   tf.io.gfile.rename(tmp_path, path, overwrite=True)
-
-
-def get_tfds_path(relative_path):
-  """Returns absolute path to file given path relative to tfds root."""
-  path = os.path.join(tfds_dir(), relative_path)
-  return path
-
-
-def resource_path(
-    package: Union[str, types.ModuleType]
-) -> ReadOnlyPath:
-  """Returns `importlib.resources.files`."""
-  return importlib_resources.files(package)  # pytype: disable=module-attr
-
-
-def to_write_path(path: ReadOnlyPath) -> ReadWritePath:
-  """Cast the path to a read-write Path."""
-  if not isinstance(path, pathlib.Path):
-    raise ValueError(
-        f'Can\'t write {path!r}. Make sure you\'re not running from a '
-        'zipapp.'
-    )
-  path = typing.cast(ReadWritePath, path)
-  return path
 
 
 def read_checksum_digest(path, checksum_cls=hashlib.sha256):
